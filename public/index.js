@@ -1,84 +1,88 @@
-
 document.addEventListener('readystatechange', () => {
-    if (document.readyState === 'interactive') {
-        init();
-    }
+  if (document.readyState === 'interactive') {
+    init();
+  }
 });
 
 function init() {
-    const promise = fetch('/wine-reviews');
+  const promise = fetch('/wine-reviews');
 
-    promise.then((res) => {
-        if (res.ok) {
-            res.json().then((data) => {
-                const root = document.querySelector('.container');
-                renderTable(root, data);
-            })
-        }
-    }, (err) => {
-        console.log(err);
-    });
+  promise.then((res) => {
+    if (res.ok) {
+      res.json().then((data) => {
+        const root = document.querySelector('.container');
+        renderTable(root, data);
+      })
+    }
+  }, (err) => {
+    console.log(err);
+  });
 }
 
 function renderTable(root, data) {
-    const result = data;
-    // get the reference for the body
-    const body = document.getElementsByTagName("body")[0];
+  const result = data;
+  // get the reference for the body
+  const container = document.querySelector('.container');
 
-    // creates <table> , <thead> and <tbody> elements
-    const tbl = document.createElement("table");
-    const tblHead = document.createElement("thead");
-    const tblBody = document.createElement("tbody");
+  // creates <table> , <thead> and <tbody> elements
+  const table = createElement({tagName: 'table', className: 'reviews'});
+  const thead = createElement({tagName: 'thead'});
+  const tbody = createElement({tagName: 'tbody'});
 
-    // I don't follow what we are doing here??!!
+  // I don't follow what we are doing here??!!
 
-  renderHeadings(result, tblHead);
-  renderRows(result, tblBody);
+  renderHeadings(result, thead);
+  renderRows(result, tbody);
 
-
-    // appends <thead> and <tbody> into <table>
-    tbl.appendChild(tblHead);
-    tbl.appendChild(tblBody);
-    // appends <table> into <body>
-    body.appendChild(tbl);
-    tbl.setAttribute("border", "2");
+  container.innerHTML = '';
+  table.appendChild(thead);
+  table.appendChild(tbody);
+  container.appendChild(table)
 }
 
 const renderHeadings = (results, thead) => {
-    const set = new Set();
-    results.forEach(review => {
-        Object.keys(review).forEach(prop => set.add(prop));
-    });
-    const headings = [...set];
-    console.log(headings);
-    // create headings for each and append
+  const set = new Set();
+  results.forEach(review => {
+    Object.keys(review).forEach(prop => set.add(prop));
+  });
+  const headings = [...set];
+  const tr = document.createElement('tr');
+  headings.forEach(heading => {
+    tr.appendChild(createElement({
+      tagName: 'th',
+      innerHTML: heading
+    }))
+  });
+  thead.innerHTML = '';
+  thead.appendChild(tr);
 };
 
 const renderRows = (results, tbody) => {
   results.forEach(review => {
-    const tr = createTr();
-    const tds = Object.values(review).forEach(val => {
-      tr.appendChild(createTdElement(val));
+    const tr = document.createElement('tr');
+    Object.values(review).forEach(val => {
+      tr.appendChild(createElement({
+        tagName: 'td',
+        innerHTML: val
+      }));
     });
-    // append the tr to tbody
+    tbody.appendChild(tr);
   });
-  // create a tr eleement
-  console.log(heasdingn);
-  // create headings for each and append
 };
 
-const createThElement = (str, className) => {
-    var column = document.createElement('th');
-    column.setAttribute('class', className);
-    column.innerHTML = str;
-    return column;
-};
-
-const createTdElement = (str, className) => {
-    var row = document.createElement('td');
-    row.setAttribute('class', className);
-    row.innerHTML = str;
-    return row;
+const createElement = (props) => {
+  if (typeof props === 'string') {
+    return document.createElement(props);
+  }
+  const {
+    className,
+    innerHTML,
+    tagName
+  } = props;
+  const elem = document.createElement(tagName);
+  innerHTML && (elem.innerHTML = innerHTML);
+  className && elem.classList.add(className);
+  return elem;
 };
 
 
