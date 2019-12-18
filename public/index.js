@@ -63,7 +63,7 @@ const renderRows = (results, tbody) => {
     // append the tr to tbody
   });
   // create a tr eleement
-  console.log(headings);
+  console.log(heasdingn);
   // create headings for each and append
 };
 
