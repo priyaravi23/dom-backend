@@ -30,15 +30,11 @@ function renderTable(root, data) {
     const tblHead = document.createElement("thead");
     const tblBody = document.createElement("tbody");
 
-    result.forEach((data) => {
-        Object.entries(data).forEach(([key, val]) => {
-            let header = createThElement(key, 'header');
-            let value = createTdElement(val, 'rowData');
+    // I don't follow what we are doing here??!!
 
-            header.appendChild(value);
-            root.appendChild(header);
-        })
-    });
+  renderHeadings(result, tblHead);
+  renderRows(result, tblBody);
+
 
     // appends <thead> and <tbody> into <table>
     tbl.appendChild(tblHead);
@@ -47,6 +43,29 @@ function renderTable(root, data) {
     body.appendChild(tbl);
     tbl.setAttribute("border", "2");
 }
+
+const renderHeadings = (results, thead) => {
+    const set = new Set();
+    results.forEach(review => {
+        Object.keys(review).forEach(prop => set.add(prop));
+    });
+    const headings = [...set];
+    console.log(headings);
+    // create headings for each and append
+};
+
+const renderRows = (results, tbody) => {
+  results.forEach(review => {
+    const tr = createTr();
+    const tds = Object.values(review).forEach(val => {
+      tr.appendChild(createTdElement(val));
+    });
+    // append the tr to tbody
+  });
+  // create a tr eleement
+  console.log(headings);
+  // create headings for each and append
+};
 
 const createThElement = (str, className) => {
     var column = document.createElement('th');
