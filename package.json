@@ -7,9 +7,6 @@
     "devstart": "nodemon ./bin/www"
   },
   "main": "app.js",
-  "engines": {
-    "node": "10.x"
-  },
   "dependencies": {
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
