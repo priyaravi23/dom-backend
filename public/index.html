@@ -7,9 +7,29 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
+    <style>
+        td:empty {
+            background-color: lightsalmon;
+        }
+        th {
+            text-transform: capitalize;
+        }
+        td:empty::after {
+            content: 'N/A'
+        }
+    </style>
     <script src="index.js" type="application/javascript"></script>
 </head>
 <body>
-    <div class="container">
+<div class="container">
+    <table>
+        <thead>
+
+        </thead>
+        <tbody>
+
+        </tbody>
+    </table>
+</div>
 </body>
 </html>

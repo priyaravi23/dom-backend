@@ -1,3 +1,10 @@
+const model = {
+    headings: {
+        // propName: { sortState: 'asc', label: propName }
+    },
+    sortProp: undefined // price
+};
+
 document.addEventListener('readystatechange', () => {
     if (document.readyState === 'interactive') {
         init();
@@ -10,92 +17,37 @@ function init() {
     promise.then((res) => {
         if (res.ok) {
             res.json().then((data) => {
-                const root = document.querySelector('.container');
-                renderTable(root, data);
+                // perform the model initialization
+                postDataAccess(data);
+                console.log(model);
+                renderTable();
+                // Attach sort handlers here
+                attachSortHandlers(model);
             })
         }
     }, (err) => {
         console.log(err);
     });
 
-    attachSortHandlers();
 }
 
-function renderTable(root, data) {
-    const result = data;
-    // get the reference for the body
-    const body = document.getElementsByTagName("body")[0];
-
-    // creates <table> , <thead> and <tbody> elements
-    const tbl = document.createElement("table");
-    const tblHead = document.createElement("thead");
-    const tblBody = document.createElement("tbody");
-
-    renderHeadings(result, tblHead);
-    renderRows(result, tblBody);
-
-
-    // appends <thead> and <tbody> into <table>
-    tbl.appendChild(tblHead);
-    tbl.appendChild(tblBody);
-    // appends <table> into <body>
-    body.appendChild(tbl);
-    tbl.setAttribute("border", "2");
-}
-
-const renderHeadings = (results, thead) => {
+/** Start utility functions */
+const getGetHeadingsFromData = reviewsArr => {
     const set = new Set();
-    const tr = document.createElement('tr');
-
-    results.forEach(review => {
+    reviewsArr.forEach(review => {
         Object.keys(review).forEach(prop => set.add(prop));
     });
-    const headings = [...set];
-    // create headings for each and append
-    headings.forEach(heading => {
-        const header = createThElement(heading, '', heading);
-        tr.appendChild(header);
-        thead.appendChild(tr);
-    });
+    return [...set];
 };
 
-const renderRows = (results, tbody) => {
-    results.forEach(review => {
-        const tr = document.createElement('tr');
-        const tds = Object.values(review).forEach(val => {
-            tr.appendChild(createTdElement(val));
-        });
-        tbody.appendChild(tr);
-        tr.appendChild(createTdElement(tds));
-    });
-};
-
-const createThElement = (str, className, prop) => {
-    var th = document.createElement('th');
-    th.setAttribute('class', className);
-    th.setAttribute('data-prop', prop);
-    th.innerHTML = str;
-    return th;
-};
-
-const createTdElement = (str, className) => {
-    var td = document.createElement('td');
-    td.setAttribute('class', className);
-    td.innerHTML = str;
-    return td;
-};
-
-function sortBy(results, prop, asc) {
-    let sortedData = [...results];
-
+function sortBy(newReviewsArr, prop, asc) {
     // sort fn
     if (asc) {
-        sortedData.sort(compareFnAsc.bind(null, prop));
+        newReviewsArr.sort(compareFnAsc.bind(null, prop));
     } else {
-        sortedData.sort(compareFnDesc.bind(null, prop));
+        newReviewsArr.sort(compareFnDesc.bind(null, prop));
     }
-
-    return sortedData;
+    return newReviewsArr;
 }
 
 function compareFnAsc(prop, a, b) {
@@ -110,22 +62,114 @@ function compareFnDesc(prop, a, b) {
     else return 0;
 }
 
-function attachSortHandlers(results, thead) {
-    // const tableHeaders = renderHeadings(results, thead);
-    const tableHeaders = Array.from(document.querySelectorAll('thead th'));
+const createThElement = (str, className, prop) => {
+    var th = document.createElement('th');
+    th.setAttribute('class', className);
+    th.setAttribute('data-prop', prop);
+    th.innerHTML = `${str} `;
+    return th;
+};
+const createTdElement = (str, className) => {
+    var td = document.createElement('td');
+    td.setAttribute('class', className);
+    td.innerHTML = str;
+    return td;
+};
+/** End utility functions */
 
-    tableHeaders.forEach((th, index) => {
-        const prop = th.dataset.prop;
-        let sortState = ;
 
-        const thClickHandler = () => {
-            const newSortState = !sortState;
-            sortState = newSortState;
-            const newOrder = sortBy(results, prop, newSortState);
-            renderRows(newOrder);
-            th.querySelector('span').innerHTML = newSortState ? '(asc)' : '(desc)';
+/** Event handlers / Data callbacks
+ * @desc This function runs after we receive data from the backend
+ * */
+
+function postDataAccess(reviewsArr) {
+    const headings = getGetHeadingsFromData(reviewsArr);
+    // model.sortState = { 'region_1': undefined / 'asc' / 'desc' }
+    model.headings = headings.reduce((sortState, heading) => {
+        sortState[heading] = {
+            sortState: undefined,
+            label: heading
         };
+        return sortState;
+    }, {});
+    model.reviews = reviewsArr;
+}
 
-        th.addEventListener('click', thClickHandler);
+function attachSortHandlers() {
+    // const tableHeaders = renderHeadings(results, thead);
+    const ths = Array.from(document.querySelectorAll('thead th'));
+
+    const clickHandler = (e) => {
+        const {prop} = e.target.dataset;
+        console.log(prop);
+        model.headings[prop].sortState = !model.headings[prop].sortState;
+        model.sortProp = prop;
+        console.time('sort');
+        // updateThWithVisuals()
+        // Create a new array
+        const newReviewsArr = [...model.reviews];
+        sortBy(newReviewsArr, prop, model.headings[prop].sortState);
+        console.log(newReviewsArr.map(r => r.price));
+        console.timeEnd('sort');
+        console.time('render');
+        updateHeadingsWithSortState();
+        renderRows(newReviewsArr, document.querySelector('.container tbody'));
+        console.timeEnd('render');
+        console.log(model);
+    };
+
+    ths.forEach((th, index) => {
+        const prop = th.dataset.prop;
+        th.addEventListener('click', clickHandler)
     });
 }
+
+/** Start render code */
+function renderTable() {
+    const container = document.querySelector('.container');
+    // creates <table> , <thead> and <tbody> elements
+    const tblHead = container.querySelector("thead");
+    const tblBody = container.querySelector("tbody");
+    renderHeadings(model.headings, tblHead);
+    renderRows(model.reviews, tblBody);
+}
+
+const renderHeadings = (headings, thead) => {
+    thead.innerHTML = '';
+    const tr = document.createElement('tr');
+    // create headings for each and append
+    Object.values(headings).forEach(headingObj => {
+        const header = createThElement(headingObj.label.replace(/_/g, ' '), '', headingObj.label);
+        tr.appendChild(header);
+    });
+
+    thead.appendChild(tr);
+};
+
+const renderRows = (reviews, tbody) => {
+    tbody.innerHTML = '';
+    reviews.forEach(review => {
+        const tr = document.createElement('tr');
+
+        Object.values(review).forEach(val => {
+            tr.appendChild(createTdElement(val));
+        });
+
+        tbody.appendChild(tr);
+    });
+};
+
+function updateHeadingsWithSortState() {
+    const upArrow = '↑';
+    const downArrow = '↓';
+    document.querySelectorAll('.container thead th').forEach(th => {
+        const {prop} = th.dataset;
+        if (prop === model.sortProp) {
+            const arrow = model.headings[prop].sortState ? upArrow : downArrow;
+            th.innerHTML = model.headings[prop].label + `${arrow}`
+        } else {
+            th.innerHTML = model.headings[prop].label;
+        }
+    });
+}
+/** End render code */
