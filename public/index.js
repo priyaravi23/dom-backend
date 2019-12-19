@@ -23,6 +23,7 @@ function init() {
                 renderTable();
                 // Attach sort handlers here
                 attachSortHandlers(model);
+                addInputSearchBox();
             })
         }
     }, (err) => {
@@ -128,8 +129,8 @@ function attachSortHandlers() {
 function renderTable() {
     const container = document.querySelector('.container');
     // creates <table> , <thead> and <tbody> elements
-    const tblHead = container.querySelector("thead");
-    const tblBody = container.querySelector("tbody");
+    const tblHead = container.querySelector('thead');
+    const tblBody = container.querySelector('tbody');
     renderHeadings(model.headings, tblHead);
     renderRows(model.reviews, tblBody);
 }
@@ -137,6 +138,7 @@ function renderTable() {
 const renderHeadings = (headings, thead) => {
     thead.innerHTML = '';
     const tr = document.createElement('tr');
+
     // create headings for each and append
     Object.values(headings).forEach(headingObj => {
         const header = createThElement(headingObj.label.replace(/_/g, ' '), '', headingObj.label);
@@ -162,7 +164,9 @@ const renderRows = (reviews, tbody) => {
 function updateHeadingsWithSortState() {
     const upArrow = '↑';
     const downArrow = '↓';
-    document.querySelectorAll('.container thead th').forEach(th => {
+    const ths = document.querySelectorAll('.container thead th');
+
+    ths.forEach(th => {
         const {prop} = th.dataset;
         if (prop === model.sortProp) {
             const arrow = model.headings[prop].sortState ? upArrow : downArrow;
@@ -173,3 +177,40 @@ function updateHeadingsWithSortState() {
     });
 }
 /** End render code */
+
+function addInputSearchBox() {
+    const ths = Array.from(document.querySelectorAll('.container thead th'));
+
+    ths.forEach((th, i) => {
+        const div = document.createElement('div');
+        const input = document.createElement('input');
+        input.setAttribute('type', 'text');
+        input.classList.add('id-' + i);
+        input.setAttribute('placeholder', th.innerHTML);
+        th.appendChild(div);
+        div.appendChild(input);
+
+        input.addEventListener('keyup', filterByInput);
+    });
+}
+
+function filterByInput() {
+    const input = document.querySelector('input');
+    const filter = input.value.trim().toUpperCase();
+    const table = document.querySelector('table');
+    const tr = table.getElementsByTagName('tr');
+
+    for (let i = 0; i < tr.length; i++) {
+        let td0 = tr[i].getElementsByTagName('td')[0];
+        let td1 = tr[i].getElementsByTagName('td')[1];
+        let td2 = tr[i].getElementsByTagName('td')[2];
+
+        if (td0 || td1 || td2) {
+            if (td0.innerHTML.toUpperCase().indexOf(filter) > -1 || td1.innerHTML.toUpperCase().indexOf(filter) > -1 || td2.innerHTML.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = '';
+            } else {
+                tr[i].style.display = 'none';
+            }
+        }
+    }
+}
