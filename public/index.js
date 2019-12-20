@@ -22,8 +22,9 @@ function init() {
                 console.log(model);
                 renderTable();
                 // Attach sort handlers here
-                attachSortHandlers(model);
-                addInputSearchBox();
+                attachHandlers(model);
+                // Not the right place to do this.
+                // addInputSearchBox();
             })
         }
     }, (err) => {
@@ -70,12 +71,14 @@ const createThElement = (str, className, prop) => {
     th.innerHTML = `${str} `;
     return th;
 };
+
 const createTdElement = (str, className) => {
     var td = document.createElement('td');
     td.setAttribute('class', className);
     td.innerHTML = str;
     return td;
 };
+
 /** End utility functions */
 
 
@@ -96,41 +99,13 @@ function postDataAccess(reviewsArr) {
     model.reviews = reviewsArr;
 }
 
-function attachSortHandlers() {
-    // const tableHeaders = renderHeadings(results, thead);
-    const ths = Array.from(document.querySelectorAll('thead th'));
-
-    const clickHandler = (e) => {
-        const {prop} = e.target.dataset;
-        console.log(prop);
-        model.headings[prop].sortState = !model.headings[prop].sortState;
-        model.sortProp = prop;
-        console.time('sort');
-        // updateThWithVisuals()
-        // Create a new array
-        const newReviewsArr = [...model.reviews];
-        sortBy(newReviewsArr, prop, model.headings[prop].sortState);
-        console.log(newReviewsArr.map(r => r.price));
-        console.timeEnd('sort');
-        console.time('render');
-        updateHeadingsWithSortState();
-        renderRows(newReviewsArr, document.querySelector('.container tbody'));
-        console.timeEnd('render');
-        console.log(model);
-    };
-
-    ths.forEach((th, index) => {
-        const prop = th.dataset.prop;
-        th.addEventListener('click', clickHandler)
-    });
-}
-
 /** Start render code */
 function renderTable() {
     const container = document.querySelector('.container');
     // creates <table> , <thead> and <tbody> elements
     const tblHead = container.querySelector('thead');
     const tblBody = container.querySelector('tbody');
+    // Input elements should be created in renderHeadings ...
     renderHeadings(model.headings, tblHead);
     renderRows(model.reviews, tblBody);
 }
@@ -140,9 +115,24 @@ const renderHeadings = (headings, thead) => {
     const tr = document.createElement('tr');
 
     // create headings for each and append
-    Object.values(headings).forEach(headingObj => {
-        const header = createThElement(headingObj.label.replace(/_/g, ' '), '', headingObj.label);
-        tr.appendChild(header);
+    Object.entries(headings).forEach(([prop, {label, sortState}]) => {
+
+        // create a heading ...
+        // create a div element with the text
+        const divText = createElem('div', label.replace(/_/g, ' '), null, {
+            'data-prop': prop
+        });
+        // create a div element that contains the input element
+        const inputElem = createElem('input', '', null, {
+            'data-prop': prop,
+            'type': 'text',
+            'placeholder': label.replace(/_/g, ' ')
+        });
+        const divWithInput = createElem('div', null, null, null, [inputElem]);
+
+        // create a th element
+        const th = createElem('th', null, null, null, [divWithInput, divText]);
+        tr.appendChild(th);
     });
 
     thead.appendChild(tr);
@@ -150,9 +140,11 @@ const renderHeadings = (headings, thead) => {
 
 const renderRows = (reviews, tbody) => {
     tbody.innerHTML = '';
-    reviews.forEach(review => {
+    console.log('here ... ');
+    const filteredReviews = filterReviews(reviews, model.headings);
+    filteredReviews.forEach(review => {
         const tr = document.createElement('tr');
-
+        // filter all reviews according to the heading file
         Object.values(review).forEach(val => {
             tr.appendChild(createTdElement(val));
         });
@@ -164,7 +156,7 @@ const renderRows = (reviews, tbody) => {
 function updateHeadingsWithSortState() {
     const upArrow = '↑';
     const downArrow = '↓';
-    const ths = document.querySelectorAll('.container thead th');
+    const ths = document.querySelectorAll('.container thead th > div:last-child');
 
     ths.forEach(th => {
         const {prop} = th.dataset;
@@ -176,41 +168,25 @@ function updateHeadingsWithSortState() {
         }
     });
 }
+
 /** End render code */
 
-function addInputSearchBox() {
-    const ths = Array.from(document.querySelectorAll('.container thead th'));
-
-    ths.forEach((th, i) => {
-        const div = document.createElement('div');
-        const input = document.createElement('input');
-        input.setAttribute('type', 'text');
-        input.classList.add('id-' + i);
-        input.setAttribute('placeholder', th.innerHTML);
-        th.appendChild(div);
-        div.appendChild(input);
-
-        input.addEventListener('keyup', filterByInput);
-    });
-}
-
-function filterByInput() {
-    const input = document.querySelector('input');
-    const filter = input.value.trim().toUpperCase();
-    const table = document.querySelector('table');
-    const tr = table.getElementsByTagName('tr');
-
-    for (let i = 0; i < tr.length; i++) {
-        let td0 = tr[i].getElementsByTagName('td')[0];
-        let td1 = tr[i].getElementsByTagName('td')[1];
-        let td2 = tr[i].getElementsByTagName('td')[2];
-
-        if (td0 || td1 || td2) {
-            if (td0.innerHTML.toUpperCase().indexOf(filter) > -1 || td1.innerHTML.toUpperCase().indexOf(filter) > -1 || td2.innerHTML.toUpperCase().indexOf(filter) > -1) {
-                tr[i].style.display = '';
-            } else {
-                tr[i].style.display = 'none';
-            }
-        }
-    }
-}
+/**
+ * @desc create an element, given the tagName, className, etc ..
+ * @param {String} tagName tag of the element e.g. div, span, section etc
+ * @param {String} [innerHTML]
+ * @param {String} [className] class of the element
+ * @param {Object} [attributes]  An array in the format [{'id': 'myNewElement'}]
+ * @param {Array} [children] An array of dom elements to be attached as children to the element
+ * @return {Object} HTMLElement
+ * */
+const createElem = (tagName, innerHTML, className, attributes, children = []) => {
+    const elem = document.createElement(tagName);
+    className && (elem.classList.add(className));
+    innerHTML && (elem.innerHTML = innerHTML);
+    attributes && Object.keys(attributes).length &&
+    Object.entries(attributes).forEach(([attrName, attrVal]) =>
+        elem.setAttribute(attrName, attrVal));
+    Array.isArray(children) && children.forEach(child => elem.appendChild(child));
+    return elem;
+};
